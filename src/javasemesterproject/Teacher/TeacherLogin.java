@@ -10,6 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javasemesterproject.DBConnection;
 import javasemesterproject.Main;
+import javasemesterproject.security.logging.Logger;
+import javasemesterproject.security.logging.SecureLoggerFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -80,10 +82,14 @@ public class TeacherLogin extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent ae){
         if(ae.getSource() == b1){
+            Logger auditLog = SecureLoggerFactory.getInstance().getLogger();
             try{
                 DBConnection c1 = new DBConnection();
                 String u = t1.getText();
                 String v = String.valueOf(t2.getPassword());
+
+                auditLog.logEvent("auth.teacher.attempt", "username=" + u);
+                auditLog.logSensitive("teacher.password", v);
 
                 String q = "select * from Teacher where username='"+u+"' and password='"+v+"'";
 
@@ -91,13 +97,17 @@ public class TeacherLogin extends JFrame implements ActionListener{
                 if(rs.next()){
                     JOptionPane.showMessageDialog(null, "login Successfull");
                     currentTeacherID = Integer.parseInt(rs.getString("teacherID"));
+                    auditLog.logEvent("auth.teacher.success",
+                            "username=" + u + " teacherID=" + currentTeacherID);
                     setVisible(false);
                     new Teacher();
                     Main.main.dispose();
                 }else{
+                    auditLog.logEvent("auth.teacher.failure", "username=" + u);
                     JOptionPane.showMessageDialog(null, "Invalid login");
                 }
         }catch(HeadlessException | NumberFormatException | SQLException e){
+            auditLog.logError("auth.teacher", "exception during teacher login", e);
             e.printStackTrace();
             }
         }

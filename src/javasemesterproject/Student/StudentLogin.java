@@ -8,6 +8,8 @@ import java.awt.event.ActionListener;
 import java.sql.ResultSet;
 import javasemesterproject.DBConnection;
 import javasemesterproject.Main;
+import javasemesterproject.security.logging.Logger;
+import javasemesterproject.security.logging.SecureLoggerFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -77,10 +79,14 @@ public class StudentLogin extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent ae){
         if(ae.getSource() == b1){
+            Logger auditLog = SecureLoggerFactory.getInstance().getLogger();
             try{
                 DBConnection c1 = new DBConnection();
                 String u = t1.getText();
                 String v = String.valueOf(t2.getPassword());
+
+                auditLog.logEvent("auth.student.attempt", "username=" + u);
+                auditLog.logSensitive("student.password", v);
 
                 String q = "select * from Student where username='"+u+"' and password='"+v+"'";
 
@@ -88,13 +94,17 @@ public class StudentLogin extends JFrame implements ActionListener{
                 if(rs.next()){
                     JOptionPane.showMessageDialog(null, "login Successfull");
                     currentStudentID = Integer.parseInt(rs.getString("stdID"));
+                    auditLog.logEvent("auth.student.success",
+                            "username=" + u + " stdID=" + currentStudentID);
                     setVisible(false);
                     new Student();
                     Main.main.dispose();
                 }else{
+                    auditLog.logEvent("auth.student.failure", "username=" + u);
                     JOptionPane.showMessageDialog(null, "Invalid login");
                 }
         }catch(Exception e){
+            auditLog.logError("auth.student", "exception during student login", e);
             e.printStackTrace();
             }
         }

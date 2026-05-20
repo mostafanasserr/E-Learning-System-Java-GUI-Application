@@ -1,0 +1,13 @@
+# Build output
+build/
+dist/
+
+# Runtime logs & encryption key (NEVER commit)
+logs/
+
+# OS junk
+.DS_Store
+
+# IDE
+*.iml
+.idea/

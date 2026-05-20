@@ -8,6 +8,8 @@ import java.awt.event.ActionListener;
 import java.sql.ResultSet;
 import javasemesterproject.DBConnection;
 import javasemesterproject.Main;
+import javasemesterproject.security.logging.Logger;
+import javasemesterproject.security.logging.SecureLoggerFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -76,24 +78,32 @@ public class AdminLogin extends JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent ae){
         if(ae.getSource() == b1){
+            Logger auditLog = SecureLoggerFactory.getInstance().getLogger();
             try{
                 DBConnection c1 = new DBConnection();
                 String u = t1.getText();
                 String v = String.valueOf(t2.getPassword());
 
+                auditLog.logEvent("auth.admin.attempt", "username=" + u);
+                auditLog.logSensitive("admin.password", v);
+
                 String q = "select * from Admin where username='"+u+"' and password='"+v+"'";
 
-                ResultSet rs = c1.s.executeQuery(q); 
+                ResultSet rs = c1.s.executeQuery(q);
                 if(rs.next()){
                     JOptionPane.showMessageDialog(null, "login Successfull");
                     currentAdminID = Integer.parseInt(rs.getString("Adminid"));
+                    auditLog.logEvent("auth.admin.success",
+                            "username=" + u + " adminID=" + currentAdminID);
                     setVisible(false);
                     new Admin();
                     Main.main.dispose();
                 }else{
+                    auditLog.logEvent("auth.admin.failure", "username=" + u);
                     JOptionPane.showMessageDialog(null, "Invalid login");
                 }
         }catch(Exception e){
+            auditLog.logError("auth.admin", "exception during admin login", e);
             e.printStackTrace();
             }
         }
